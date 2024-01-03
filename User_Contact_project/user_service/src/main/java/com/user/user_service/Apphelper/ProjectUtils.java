@@ -15,7 +15,7 @@ public class ProjectUtils {
 	private final static String SALT = "MySecureSalt";
 
 	// This method use to encrypt to string
-	public String encryptPasswd(String strToEncrypt) {
+	public String encryptPassword(String strToEncrypt) {
 		try {
 
 			// Create default byte array
