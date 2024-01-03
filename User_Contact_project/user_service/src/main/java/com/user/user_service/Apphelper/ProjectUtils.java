@@ -10,29 +10,63 @@ import org.springframework.stereotype.Component;
 @Component
 public class ProjectUtils {
 	
-	public String EncryptPasswd(String input) {
-        StringBuilder hash = new StringBuilder();
-        try {
-        	//This line initializes a MessageDigest object named sha with the SHA-1 algorithm. A MessageDigest is used for calculating hash values of data.
-            MessageDigest sha = MessageDigest.getInstance("SHA-1");
-            // This line calculates the SHA-1 hash of the input string and stores it in the hashedBytes byte array. input.getBytes() converts the input string into a byte array before hashing.
-            byte[] hashedBytes = sha.digest(input.getBytes());
-            char[] digits = {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f'};
-            for (int idx = 0; idx < hashedBytes.length; ++idx) {
-                byte b = hashedBytes[idx];
-                //This line appends the first 4 bits (the high nibble) of the byte b to the hash StringBuilder by bitwise ANDing it with 0xf0 
-                //and then right-shifting the result by 4 bits to get the index in the digits array.
-                hash.append(digits[(b & 0xf0) >> 4]);
-                //This line appends the last 4 bits (the low nibble) of the byte b to the hash StringBuilder by bitwise ANDing it with 0x0f.
-                hash.append(digits[b & 0x0f]);
-            }
-        } catch (NoSuchAlgorithmException e) {
-        	//This exception is thrown if the requested cryptographic algorithm ("SHA-1" in this case) is not available on the system.
-        	e.printStackTrace();
-        }
-        //0xf0 is a hexadecimal literal representing the value 240 in decimal notation. In binary, it is 11110000. It is used as a bitmask to extract the first 4 bits (the high nibble) from a byte.
-        return hash.toString();
-    }
+	private final static String SECRET_KEY = "asha_secret_key";
+
+	private final static String SALT = "MySecureSalt";
+
+	// This method use to encrypt to string
+	public String encryptPasswd(String strToEncrypt) {
+		try {
+
+			// Create default byte array
+			byte[] iv = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
+			IvParameterSpec ivspec = new IvParameterSpec(iv);
+
+			// Create SecretKeyFactory object
+			SecretKeyFactory factory = SecretKeyFactory.getInstance("PBKDF2WithHmacSHA256");
+
+			// Create KeySpec object and assign with
+			KeySpec spec = new PBEKeySpec(SECRET_KEY.toCharArray(), SALT.getBytes(), 10, 256);
+			SecretKey tmp = factory.generateSecret(spec);
+			SecretKeySpec secretKey = new SecretKeySpec(tmp.getEncoded(), "AES");
+
+			Cipher cipher = Cipher.getInstance("AES/CBC/PKCS5Padding");
+			cipher.init(Cipher.ENCRYPT_MODE, secretKey, ivspec);
+			return Base64.getEncoder().encodeToString(cipher.doFinal(strToEncrypt.getBytes(StandardCharsets.UTF_8)));
+		} catch (Exception e) {
+			System.out.println("Error while encrypting: " + e.toString());
+		}
+		return null;
+	}
+
+	// This method use to decrypt to string
+	public String decrypt(String strToDecrypt) {
+		try {
+			strToDecrypt = strToDecrypt.replace(' ', '+');
+			// Default byte array
+			byte[] iv = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
+			// Create IvParameterSpec object and assign with
+			// constructor
+			IvParameterSpec ivspec = new IvParameterSpec(iv);
+
+			// Create SecretKeyFactory Object
+			SecretKeyFactory factory = SecretKeyFactory.getInstance("PBKDF2WithHmacSHA256");
+
+			// Create KeySpec object and assign with
+
+			KeySpec spec = new PBEKeySpec(SECRET_KEY.toCharArray(), SALT.getBytes(), 10, 256);
+			SecretKey tmp = factory.generateSecret(spec);
+			SecretKeySpec secretKey = new SecretKeySpec(tmp.getEncoded(), "AES");
+
+			Cipher cipher = Cipher.getInstance("AES/CBC/PKCS5PADDING");
+			cipher.init(Cipher.DECRYPT_MODE, secretKey, ivspec);
+
+			return new String(cipher.doFinal(Base64.getDecoder().decode(strToDecrypt)));
+		} catch (Exception e) {
+			System.out.println("Error while decrypting: " + e.toString());
+		}
+		return null;
+	}
 	
 	
 	public String removeUnwantedSpaces(String passedName){
