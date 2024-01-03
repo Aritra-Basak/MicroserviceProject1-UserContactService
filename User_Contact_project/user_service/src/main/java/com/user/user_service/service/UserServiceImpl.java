@@ -88,7 +88,7 @@ public class UserServiceImpl implements UserService {
 		    				fetchedUsers.setContactCount(contacts.size());
 		    				
 		    		}
-		    		fetchedUsers.setPassword(pu.EncryptPasswd(fetchedUsers.getPassword()));
+		    		fetchedUsers.setPassword(pu.encryptPassword(fetchedUsers.getPassword()));
 		    		usersList.add(fetchedUsers);
 		   
       
